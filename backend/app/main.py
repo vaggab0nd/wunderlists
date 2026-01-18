@@ -3,13 +3,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
+import logging
 
 from backend.app.database import engine, Base
 from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router
 from backend.app.routes.weather import router as weather_router
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Create database tables with error handling
+try:
+    logger.info("Attempting to create database tables...")
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.error(f"Failed to create database tables: {e}")
+    logger.warning("Application will continue but database functionality may be limited")
 
 app = FastAPI(
     title="Wunderlists - Task Tracking App",
@@ -60,8 +71,27 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "service": "wunderlists"}
+    """Health check endpoint with database status"""
+    health_status = {
+        "status": "healthy",
+        "service": "wunderlists",
+        "database": "unknown"
+    }
+
+    # Check database connection
+    try:
+        from backend.app.database import SessionLocal
+        from sqlalchemy import text
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        health_status["database"] = "connected"
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        health_status["database"] = "disconnected"
+        health_status["database_error"] = str(e)
+
+    return health_status
 
 if __name__ == "__main__":
     import uvicorn
