@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wunderlists - Your Digital Life Hub</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <h1>📋 Wunderlists</h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button>
+                    <button class="btn btn-secondary" onclick="openEventModal()">+ New Event</button>
+                    <button class="btn btn-secondary" onclick="openLocationModal()">+ Add Location</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div class="container">
+        <!-- Weather Widgets -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="card-header">
+                <h2 class="card-title">🌤️ Weather</h2>
+                <button class="btn btn-small btn-secondary" onclick="loadWeather()">Refresh</button>
+            </div>
+            <div id="weatherGrid" class="weather-grid">
+                <div class="loading">Loading weather...</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="dashboard">
+            <!-- Tasks Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">✅ Tasks</h2>
+                    <button class="btn btn-small btn-secondary" onclick="loadTasks()">Refresh</button>
+                </div>
+                <div id="taskList" class="task-list">
+                    <div class="loading">Loading tasks...</div>
+                </div>
+            </div>
+
+            <!-- Calendar Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📅 Upcoming Events</h2>
+                    <button class="btn btn-small btn-secondary" onclick="loadEvents()">Refresh</button>
+                </div>
+                <div id="eventList" class="calendar-events">
+                    <div class="loading">Loading events...</div>
+                </div>
+            </div>
+
+            <!-- Lists Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📁 Lists</h2>
+                    <button class="btn btn-small btn-primary" onclick="openListModal()">+ New List</button>
+                </div>
+                <div id="listsGrid" class="lists-grid">
+                    <div class="loading">Loading lists...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New Task</h3>
+                <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <form onsubmit="saveTask(event)">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="taskTitle" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="taskDescription" class="form-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Priority</label>
+                    <select id="taskPriority" class="form-select">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Due Date</label>
+                    <input type="datetime-local" id="taskDueDate" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">List</label>
+                    <select id="taskList" class="form-select">
+                        <option value="">None</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Event Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New Event</h3>
+                <button class="modal-close" onclick="closeEventModal()">&times;</button>
+            </div>
+            <form onsubmit="saveEvent(event)">
+                <div class="form-group">
+                    <label class="form-label">Title</label>
+                    <input type="text" id="eventTitle" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="eventDescription" class="form-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input type="text" id="eventLocation" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Start Time</label>
+                    <input type="datetime-local" id="eventStartTime" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End Time</label>
+                    <input type="datetime-local" id="eventEndTime" class="form-input" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Event</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Location Modal -->
+    <div id="locationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Location</h3>
+                <button class="modal-close" onclick="closeLocationModal()">&times;</button>
+            </div>
+            <form onsubmit="saveLocation(event)">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="locationName" class="form-input" placeholder="e.g., Home, Mom's House" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City</label>
+                    <input type="text" id="locationCity" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Country</label>
+                    <input type="text" id="locationCountry" class="form-input" placeholder="e.g., US, UK" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Location</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- List Modal -->
+    <div id="listModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">New List</h3>
+                <button class="modal-close" onclick="closeListModal()">&times;</button>
+            </div>
+            <form onsubmit="saveList(event)">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="listName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="listDescription" class="form-textarea"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <input type="color" id="listColor" class="form-input" value="#3B82F6">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon (emoji)</label>
+                    <input type="text" id="listIcon" class="form-input" placeholder="e.g., 🏢, 🏠, 🎯" maxlength="2">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeListModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save List</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
