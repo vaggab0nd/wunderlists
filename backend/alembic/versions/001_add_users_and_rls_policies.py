@@ -22,28 +22,32 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create users table
-    op.create_table('users',
-        sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('email', sa.String(), nullable=False),
-        sa.Column('username', sa.String(), nullable=False),
-        sa.Column('hashed_password', sa.String(), nullable=False),
-        sa.Column('full_name', sa.String(), nullable=True),
-        sa.Column('is_active', sa.Boolean(), nullable=True),
-        sa.Column('is_superuser', sa.Boolean(), nullable=True),
-        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
-        sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
-    op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
-    op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
-
-    # Add user_id to tasks table (if it exists)
-    # First check if tables exist, if not they'll be created by SQLAlchemy
+    # Get database connection and inspector
     conn = op.get_bind()
     inspector = sa.inspect(conn)
+    tables = inspector.get_table_names()
+
+    # Create users table only if it doesn't exist
+    if 'users' not in tables:
+        op.create_table('users',
+            sa.Column('id', sa.Integer(), nullable=False),
+            sa.Column('email', sa.String(), nullable=False),
+            sa.Column('username', sa.String(), nullable=False),
+            sa.Column('hashed_password', sa.String(), nullable=False),
+            sa.Column('full_name', sa.String(), nullable=True),
+            sa.Column('is_active', sa.Boolean(), nullable=True),
+            sa.Column('is_superuser', sa.Boolean(), nullable=True),
+            sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=True),
+            sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
+            sa.Column('last_login', sa.DateTime(timezone=True), nullable=True),
+            sa.PrimaryKeyConstraint('id')
+        )
+        op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
+        op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
+        op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
+
+    # Add user_id to existing tables (if they exist and don't have user_id yet)
+    # Refresh table list after creating users
     tables = inspector.get_table_names()
 
     if 'tasks' in tables:
@@ -77,15 +81,17 @@ def upgrade() -> None:
 
     # Enable Row Level Security on all tables
     # RLS ensures that users can only access their own data at the database level
-    op.execute("""
-        -- Enable RLS on users table
-        ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+    if 'users' in tables:
+        op.execute("""
+            -- Enable RLS on users table (idempotent - safe to run if already enabled)
+            ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
-        -- Users can only see their own user record
-        CREATE POLICY users_isolation_policy ON users
-            FOR ALL
-            USING (id = current_setting('app.current_user_id', true)::integer);
-    """)
+            -- Drop and recreate policy (idempotent approach)
+            DROP POLICY IF EXISTS users_isolation_policy ON users;
+            CREATE POLICY users_isolation_policy ON users
+                FOR ALL
+                USING (id = current_setting('app.current_user_id', true)::integer);
+        """)
 
     # Only enable RLS on tables that exist
     if 'tasks' in tables:
@@ -93,6 +99,7 @@ def upgrade() -> None:
             ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
             -- Tasks RLS policy: users can only access their own tasks
+            DROP POLICY IF EXISTS tasks_isolation_policy ON tasks;
             CREATE POLICY tasks_isolation_policy ON tasks
                 FOR ALL
                 USING (user_id = current_setting('app.current_user_id', true)::integer);
@@ -103,6 +110,7 @@ def upgrade() -> None:
             ALTER TABLE lists ENABLE ROW LEVEL SECURITY;
 
             -- Lists RLS policy: users can only access their own lists
+            DROP POLICY IF EXISTS lists_isolation_policy ON lists;
             CREATE POLICY lists_isolation_policy ON lists
                 FOR ALL
                 USING (user_id = current_setting('app.current_user_id', true)::integer);
@@ -113,6 +121,7 @@ def upgrade() -> None:
             ALTER TABLE calendar_events ENABLE ROW LEVEL SECURITY;
 
             -- Calendar events RLS policy: users can only access their own events
+            DROP POLICY IF EXISTS calendar_events_isolation_policy ON calendar_events;
             CREATE POLICY calendar_events_isolation_policy ON calendar_events
                 FOR ALL
                 USING (user_id = current_setting('app.current_user_id', true)::integer);
@@ -123,6 +132,7 @@ def upgrade() -> None:
             ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
 
             -- Locations RLS policy: users can only access their own locations
+            DROP POLICY IF EXISTS locations_isolation_policy ON locations;
             CREATE POLICY locations_isolation_policy ON locations
                 FOR ALL
                 USING (user_id = current_setting('app.current_user_id', true)::integer);
@@ -150,6 +160,7 @@ def upgrade() -> None:
     # Add bypass policies for superusers on all tables
     if 'tasks' in tables:
         op.execute("""
+            DROP POLICY IF EXISTS tasks_superuser_policy ON tasks;
             CREATE POLICY tasks_superuser_policy ON tasks
                 FOR ALL
                 TO PUBLIC
@@ -158,6 +169,7 @@ def upgrade() -> None:
 
     if 'lists' in tables:
         op.execute("""
+            DROP POLICY IF EXISTS lists_superuser_policy ON lists;
             CREATE POLICY lists_superuser_policy ON lists
                 FOR ALL
                 TO PUBLIC
@@ -166,6 +178,7 @@ def upgrade() -> None:
 
     if 'calendar_events' in tables:
         op.execute("""
+            DROP POLICY IF EXISTS calendar_events_superuser_policy ON calendar_events;
             CREATE POLICY calendar_events_superuser_policy ON calendar_events
                 FOR ALL
                 TO PUBLIC
@@ -174,6 +187,7 @@ def upgrade() -> None:
 
     if 'locations' in tables:
         op.execute("""
+            DROP POLICY IF EXISTS locations_superuser_policy ON locations;
             CREATE POLICY locations_superuser_policy ON locations
                 FOR ALL
                 TO PUBLIC
