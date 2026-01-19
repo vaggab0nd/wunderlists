@@ -1,5 +1,10 @@
 # Railway Deployment Guide
 
+## Quick Links
+
+- **CORS/Lovable Issues**: See [LOVABLE_RAILWAY.md](LOVABLE_RAILWAY.md) for connecting Lovable to Railway API
+- **Database Issues**: Continue reading this guide
+
 ## Database Connection Issues
 
 If you're seeing "no database connection" errors on Railway, follow these troubleshooting steps:
@@ -183,8 +188,48 @@ On Railway, your app service should have:
 Optional:
 - `DEBUG=false` (for production)
 - `HOST=0.0.0.0` (usually not needed)
+- `CORS_ORIGINS` (default is `*` to allow all origins)
+
+## CORS & API Access Issues
+
+If you're getting CORS errors or "Railway API is down or blocking requests" from Lovable or other frontends:
+
+### Quick Checks
+
+1. **Test API is running:**
+   ```bash
+   curl https://your-app.railway.app/api/ping
+   ```
+   Should return: `{"status": "ok", "message": "pong", ...}`
+
+2. **Check CORS headers:**
+   ```bash
+   curl -I https://your-app.railway.app/api/ping \
+     -H "Origin: https://lovable.dev"
+   ```
+   Should include: `Access-Control-Allow-Origin: *`
+
+3. **View logs for errors:**
+   ```bash
+   railway logs --tail 50
+   ```
+
+### Solutions
+
+- **API not responding**: Check database connection (sections above)
+- **CORS errors**: See [LOVABLE_RAILWAY.md](LOVABLE_RAILWAY.md) for detailed troubleshooting
+- **502/503 errors**: API failed to start, check logs for Python/database errors
+
+The app includes automatic CORS support for:
+- All origins by default (`*`)
+- Explicit Lovable domain support
+- Proper error handling with CORS headers
+- Request logging for debugging
+
+For complete CORS troubleshooting, see **LOVABLE_RAILWAY.md**.
 
 ---
 
 **Last Updated**: January 2026
 **Railway Version**: v2 (current)
+**Related**: LOVABLE_RAILWAY.md, railway_diagnostics.py
