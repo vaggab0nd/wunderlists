@@ -134,6 +134,53 @@ def run_migrations():
             finally:
                 db.close()
 
+        # CRITICAL: Verify schema is actually complete before trusting alembic_version
+        # If alembic_version says migration is done but schema is incomplete, reset it
+        db = SessionLocal()
+        try:
+            logger.info("Validating database schema completeness...")
+            # Check if users table exists with required columns
+            result = db.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'users' AND column_name = 'email'
+                );
+            """))
+            users_table_complete = result.scalar()
+
+            # Check if tasks table has user_id column (if tasks exists)
+            result = db.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = 'tasks'
+                );
+            """))
+            tasks_exists = result.scalar()
+
+            tasks_has_user_id = True  # Assume true if tasks doesn't exist
+            if tasks_exists:
+                result = db.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns
+                        WHERE table_name = 'tasks' AND column_name = 'user_id'
+                    );
+                """))
+                tasks_has_user_id = result.scalar()
+
+            if not users_table_complete or (tasks_exists and not tasks_has_user_id):
+                logger.warning("⚠️ Schema is incomplete but alembic_version may show migration as complete!")
+                logger.warning("Resetting alembic_version to force re-migration...")
+                # Delete alembic_version to force re-migration
+                db.execute(text("DROP TABLE IF EXISTS alembic_version CASCADE;"))
+                db.commit()
+                logger.info("✓ Reset alembic_version - migration will run fresh")
+            else:
+                logger.info("✓ Schema validation passed")
+        except Exception as e:
+            logger.info(f"Schema validation check failed (expected for new DB): {e}")
+        finally:
+            db.close()
+
         # Create Alembic config
         alembic_cfg = Config(str(alembic_ini))
 
