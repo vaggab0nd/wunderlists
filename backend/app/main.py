@@ -176,21 +176,15 @@ def init_database_with_retry(max_retries=5, retry_delay=2):
             # Run migrations first to ensure schema is up to date
             migration_success = run_migrations()
 
-            # Create any remaining tables (for new installations)
-            # Only needed if migration didn't run (fresh install)
-            try:
-                # checkfirst=True ensures we only create tables that don't exist
+            if migration_success:
+                # Migration handled schema creation, no need for create_all
+                logger.info("✓ Database schema ready (migrations completed)")
+            else:
+                # Migration failed or didn't run - use create_all as fallback
+                # This only happens on fresh installs without migrations
+                logger.warning("Migration did not complete, using create_all() as fallback")
                 Base.metadata.create_all(bind=engine, checkfirst=True)
-                logger.info("✓ Database schema verification complete")
-            except Exception as create_error:
-                # If create_all fails (e.g., table exists with different structure),
-                # it's fine - migration already handled schema
-                if migration_success:
-                    logger.warning(f"create_all() failed but migration succeeded: {create_error}")
-                    logger.info("✓ Database schema is ready (via migrations)")
-                else:
-                    logger.error(f"Both migration and create_all failed: {create_error}")
-                    raise
+                logger.info("✓ Database schema created via create_all()")
 
             return True
 
