@@ -8,6 +8,10 @@ import os
 import logging
 import time
 from sqlalchemy import text
+from alembic.config import Config
+from alembic import command
+import sys
+from pathlib import Path
 
 from backend.app.database import engine, Base, SessionLocal
 from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router
@@ -26,6 +30,32 @@ logger.info(f"Environment variables available: DATABASE_URL={bool(os.getenv('DAT
            f"DATABASE_PRIVATE_URL={bool(os.getenv('DATABASE_PRIVATE_URL'))}, "
            f"PGURL={bool(os.getenv('PGURL'))}")
 
+def run_migrations():
+    """Run Alembic migrations on startup"""
+    try:
+        logger.info("Running database migrations...")
+
+        # Get the alembic.ini path
+        alembic_ini = Path(__file__).resolve().parents[3] / "alembic.ini"
+
+        if not alembic_ini.exists():
+            logger.warning(f"alembic.ini not found at {alembic_ini}, skipping migrations")
+            return False
+
+        # Create Alembic config
+        alembic_cfg = Config(str(alembic_ini))
+
+        # Run migrations to latest version
+        command.upgrade(alembic_cfg, "head")
+        logger.info("Database migrations completed successfully")
+        return True
+
+    except Exception as e:
+        logger.error(f"Migration failed: {e}", exc_info=True)
+        logger.warning("Continuing without migrations - database may be in inconsistent state")
+        return False
+
+
 def init_database_with_retry(max_retries=5, retry_delay=2):
     """Initialize database with retry logic for Railway startup delays"""
     for attempt in range(max_retries):
@@ -38,7 +68,10 @@ def init_database_with_retry(max_retries=5, retry_delay=2):
             db.close()
             logger.info("Database connection test successful")
 
-            # Create tables
+            # Run migrations first to ensure schema is up to date
+            run_migrations()
+
+            # Create any remaining tables (for new installations)
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables created successfully")
             return True
