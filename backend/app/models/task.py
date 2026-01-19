@@ -26,7 +26,7 @@ class Task(Base):
 
     # Foreign keys
     list_id = Column(Integer, ForeignKey("lists.id"), nullable=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)  # Nullable during transition
 
     # Relationships
     list = relationship("List", back_populates="tasks")
