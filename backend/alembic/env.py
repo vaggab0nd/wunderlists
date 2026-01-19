@@ -1,6 +1,7 @@
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy import text
 from alembic import context
 import os
 import sys
@@ -53,6 +54,10 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # Set statement timeout to prevent hanging migrations
+        connection.execute(text("SET statement_timeout = '30s'"))
+        connection.commit()
+
         context.configure(
             connection=connection, target_metadata=target_metadata
         )

@@ -13,6 +13,9 @@ This migration:
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import logging
+
+logger = logging.getLogger('alembic.migration')
 
 # revision identifiers, used by Alembic.
 revision = '001'
@@ -22,13 +25,17 @@ depends_on = None
 
 
 def upgrade() -> None:
+    logger.info("Starting migration 001: Add users table and RLS policies")
+
     # Get database connection and inspector
     conn = op.get_bind()
     inspector = sa.inspect(conn)
     tables = inspector.get_table_names()
+    logger.info(f"Existing tables: {tables}")
 
     # Create users table only if it doesn't exist
     if 'users' not in tables:
+        logger.info("Creating users table...")
         op.create_table('users',
             sa.Column('id', sa.Integer(), nullable=False),
             sa.Column('email', sa.String(), nullable=False),
@@ -45,10 +52,14 @@ def upgrade() -> None:
         op.create_index(op.f('ix_users_id'), 'users', ['id'], unique=False)
         op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
         op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
+        logger.info("✓ Users table created successfully")
+    else:
+        logger.info("✓ Users table already exists, skipping creation")
 
     # Add user_id to existing tables (if they exist and don't have user_id yet)
     # Refresh table list after creating users
     tables = inspector.get_table_names()
+    logger.info("Adding user_id columns to existing tables...")
 
     if 'tasks' in tables:
         # Check if user_id column already exists
@@ -81,7 +92,9 @@ def upgrade() -> None:
 
     # Enable Row Level Security on all tables
     # RLS ensures that users can only access their own data at the database level
+    logger.info("Enabling Row Level Security on tables...")
     if 'users' in tables:
+        logger.info("Enabling RLS on users table...")
         op.execute("""
             -- Enable RLS on users table (idempotent - safe to run if already enabled)
             ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -92,6 +105,7 @@ def upgrade() -> None:
                 FOR ALL
                 USING (id = current_setting('app.current_user_id', true)::integer);
         """)
+        logger.info("✓ RLS enabled on users table")
 
     # Only enable RLS on tables that exist
     if 'tasks' in tables:
@@ -193,6 +207,8 @@ def upgrade() -> None:
                 TO PUBLIC
                 USING (is_superuser());
         """)
+
+    logger.info("✓✓✓ Migration 001 completed successfully! ✓✓✓")
 
 
 def downgrade() -> None:
