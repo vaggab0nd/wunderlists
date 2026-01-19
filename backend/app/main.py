@@ -60,7 +60,8 @@ init_database_with_retry()
 app = FastAPI(
     title="Wunderlists - Task Tracking App",
     description="A personal task management and life organization hub",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False  # Disable automatic trailing slash redirects
 )
 
 # CORS middleware configuration for Lovable and other frontends
