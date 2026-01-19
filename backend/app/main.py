@@ -4,23 +4,56 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import os
 import logging
+import time
+from sqlalchemy import text
 
-from backend.app.database import engine, Base
+from backend.app.database import engine, Base, SessionLocal
 from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router
 from backend.app.routes.weather import router as weather_router
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-# Create database tables with error handling
-try:
-    logger.info("Attempting to create database tables...")
-    Base.metadata.create_all(bind=engine)
-    logger.info("Database tables created successfully")
-except Exception as e:
-    logger.error(f"Failed to create database tables: {e}")
-    logger.warning("Application will continue but database functionality may be limited")
+# Log environment info for Railway debugging
+logger.info(f"Starting Wunderlists application...")
+logger.info(f"Environment variables available: DATABASE_URL={bool(os.getenv('DATABASE_URL'))}, "
+           f"DATABASE_PRIVATE_URL={bool(os.getenv('DATABASE_PRIVATE_URL'))}, "
+           f"PGURL={bool(os.getenv('PGURL'))}")
+
+def init_database_with_retry(max_retries=5, retry_delay=2):
+    """Initialize database with retry logic for Railway startup delays"""
+    for attempt in range(max_retries):
+        try:
+            logger.info(f"Database initialization attempt {attempt + 1}/{max_retries}")
+
+            # Test connection first
+            db = SessionLocal()
+            db.execute(text("SELECT 1"))
+            db.close()
+            logger.info("Database connection test successful")
+
+            # Create tables
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables created successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Database initialization attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                logger.info(f"Retrying in {retry_delay} seconds...")
+                time.sleep(retry_delay)
+                retry_delay *= 2  # Exponential backoff
+            else:
+                logger.error("All database initialization attempts failed")
+                logger.warning("Application will start but database functionality will be limited")
+                return False
+
+# Initialize database with retry logic
+init_database_with_retry()
 
 app = FastAPI(
     title="Wunderlists - Task Tracking App",
@@ -71,25 +104,44 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint with database status"""
+    """Health check endpoint with detailed database diagnostics"""
     health_status = {
         "status": "healthy",
         "service": "wunderlists",
-        "database": "unknown"
+        "database": {
+            "status": "unknown",
+            "details": {}
+        },
+        "environment": {
+            "has_database_url": bool(os.getenv("DATABASE_URL")),
+            "has_database_private_url": bool(os.getenv("DATABASE_PRIVATE_URL")),
+            "has_pgurl": bool(os.getenv("PGURL")),
+        }
     }
 
     # Check database connection
     try:
-        from backend.app.database import SessionLocal
-        from sqlalchemy import text
         db = SessionLocal()
-        db.execute(text("SELECT 1"))
+        result = db.execute(text("SELECT version()"))
+        version = result.fetchone()[0] if result else "unknown"
         db.close()
-        health_status["database"] = "connected"
+
+        health_status["database"]["status"] = "connected"
+        health_status["database"]["details"] = {
+            "version": version.split()[0:2],  # e.g., ["PostgreSQL", "14.5"]
+            "connection_pool": {
+                "size": engine.pool.size(),
+                "checked_in": engine.pool.checkedin(),
+                "checked_out": engine.pool.checkedout(),
+                "overflow": engine.pool.overflow()
+            }
+        }
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
-        health_status["database"] = "disconnected"
-        health_status["database_error"] = str(e)
+        health_status["status"] = "degraded"
+        health_status["database"]["status"] = "disconnected"
+        health_status["database"]["error"] = str(e)
+        health_status["database"]["error_type"] = type(e).__name__
 
     return health_status
 
