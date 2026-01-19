@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import os
 import logging
 import time
@@ -61,14 +63,92 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS middleware for frontend
+# CORS middleware configuration for Lovable and other frontends
+# Get allowed origins from environment or use permissive defaults
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "*")
+if CORS_ORIGINS == "*":
+    allowed_origins = ["*"]
+else:
+    allowed_origins = [origin.strip() for origin in CORS_ORIGINS.split(",")]
+
+# Add common Lovable domains
+lovable_origins = [
+    "https://lovable.dev",
+    "https://*.lovable.dev",
+    "https://lovable.app",
+    "https://*.lovable.app",
+]
+
+# If not using wildcard, add Lovable origins
+if "*" not in allowed_origins:
+    allowed_origins.extend(lovable_origins)
+
+logger.info(f"CORS configured with origins: {allowed_origins if '*' not in allowed_origins else 'All origins (*)'}")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=allowed_origins if "*" not in allowed_origins else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log incoming requests for debugging"""
+    start_time = time.time()
+    origin = request.headers.get("origin", "no-origin")
+
+    logger.info(f"Incoming request: {request.method} {request.url.path} from origin: {origin}")
+
+    try:
+        response = await call_next(request)
+        duration = time.time() - start_time
+        logger.info(f"Request completed: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {duration:.3f}s")
+        return response
+    except Exception as e:
+        logger.error(f"Request failed: {request.method} {request.url.path} - Error: {str(e)}")
+        raise
+
+# Exception handlers to ensure CORS headers on errors
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """Handle HTTP exceptions with CORS headers"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with CORS headers"""
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()},
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handle general exceptions with CORS headers"""
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    """Log startup information"""
+    logger.info("=" * 60)
+    logger.info("Wunderlists API Started Successfully")
+    logger.info(f"CORS Origins: {allowed_origins if '*' not in allowed_origins else 'All origins (*)'}")
+    logger.info(f"Railway Environment: {os.getenv('RAILWAY_ENVIRONMENT', 'local')}")
+    logger.info(f"API Docs: http://localhost:8000/docs (or your Railway URL)")
+    logger.info("=" * 60)
 
 # Include routers
 app.include_router(tasks_router)
@@ -102,12 +182,25 @@ async def root():
         </html>
         """
 
+@app.get("/api/ping")
+async def ping():
+    """Simple ping endpoint to test API connectivity and CORS"""
+    return {
+        "status": "ok",
+        "message": "pong",
+        "timestamp": time.time(),
+        "service": "wunderlists"
+    }
+
 @app.get("/health")
+@app.get("/api/health")
 async def health_check():
     """Health check endpoint with detailed database diagnostics"""
     health_status = {
         "status": "healthy",
         "service": "wunderlists",
+        "version": "1.0.0",
+        "timestamp": time.time(),
         "database": {
             "status": "unknown",
             "details": {}
@@ -116,6 +209,7 @@ async def health_check():
             "has_database_url": bool(os.getenv("DATABASE_URL")),
             "has_database_private_url": bool(os.getenv("DATABASE_PRIVATE_URL")),
             "has_pgurl": bool(os.getenv("PGURL")),
+            "railway_environment": os.getenv("RAILWAY_ENVIRONMENT", "unknown"),
         }
     }
 
