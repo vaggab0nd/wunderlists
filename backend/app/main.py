@@ -30,30 +30,131 @@ logger.info(f"Environment variables available: DATABASE_URL={bool(os.getenv('DAT
            f"DATABASE_PRIVATE_URL={bool(os.getenv('DATABASE_PRIVATE_URL'))}, "
            f"PGURL={bool(os.getenv('PGURL'))}")
 
+def run_direct_migration(db_session):
+    """Fallback: Run migration directly via SQL if Alembic fails"""
+    try:
+        logger.info("Running direct SQL migration as fallback...")
+
+        # Check if users table exists
+        result = db_session.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = 'users'
+            );
+        """))
+        users_exists = result.scalar()
+
+        if not users_exists:
+            logger.info("Creating users table...")
+            db_session.execute(text("""
+                CREATE TABLE users (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR UNIQUE NOT NULL,
+                    username VARCHAR UNIQUE NOT NULL,
+                    hashed_password VARCHAR NOT NULL,
+                    full_name VARCHAR,
+                    is_active BOOLEAN DEFAULT TRUE,
+                    is_superuser BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                    updated_at TIMESTAMP WITH TIME ZONE,
+                    last_login TIMESTAMP WITH TIME ZONE
+                );
+                CREATE INDEX ix_users_id ON users(id);
+                CREATE INDEX ix_users_email ON users(email);
+                CREATE INDEX ix_users_username ON users(username);
+            """))
+            db_session.commit()
+            logger.info("✓ Users table created")
+
+        # Add user_id column to existing tables if they don't have it
+        for table_name in ['tasks', 'lists', 'calendar_events', 'locations']:
+            # Check if table exists
+            result = db_session.execute(text(f"""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables
+                    WHERE table_name = '{table_name}'
+                );
+            """))
+            table_exists = result.scalar()
+
+            if table_exists:
+                # Check if user_id column exists
+                result = db_session.execute(text(f"""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns
+                        WHERE table_name = '{table_name}' AND column_name = 'user_id'
+                    );
+                """))
+                column_exists = result.scalar()
+
+                if not column_exists:
+                    logger.info(f"Adding user_id column to {table_name}...")
+                    db_session.execute(text(f"""
+                        ALTER TABLE {table_name}
+                        ADD COLUMN user_id INTEGER REFERENCES users(id);
+                        CREATE INDEX ix_{table_name}_user_id ON {table_name}(user_id);
+                    """))
+                    db_session.commit()
+                    logger.info(f"✓ Added user_id to {table_name}")
+
+        logger.info("✓ Direct SQL migration completed successfully")
+        return True
+
+    except Exception as e:
+        logger.error(f"✗ Direct migration failed: {e}", exc_info=True)
+        db_session.rollback()
+        return False
+
+
 def run_migrations():
     """Run Alembic migrations on startup"""
     try:
-        logger.info("Running database migrations...")
+        logger.info("Starting database migration process...")
 
-        # Get the alembic.ini path
-        alembic_ini = Path(__file__).resolve().parents[3] / "alembic.ini"
+        # Get the alembic.ini path - it's at the project root
+        # __file__ = /app/backend/app/main.py (in Docker) or /home/user/wunderlists/backend/app/main.py (local)
+        # We need to go up 3 levels to reach project root
+        project_root = Path(__file__).resolve().parents[2]  # backend/app -> backend -> project_root
+        alembic_ini = project_root / "alembic.ini"
+
+        logger.info(f"Looking for alembic.ini at: {alembic_ini}")
+        logger.info(f"Project root: {project_root}")
+        logger.info(f"Alembic.ini exists: {alembic_ini.exists()}")
 
         if not alembic_ini.exists():
-            logger.warning(f"alembic.ini not found at {alembic_ini}, skipping migrations")
-            return False
+            logger.warning(f"alembic.ini not found at {alembic_ini}, will try direct SQL migration")
+            # Try direct SQL migration as fallback
+            db = SessionLocal()
+            try:
+                return run_direct_migration(db)
+            finally:
+                db.close()
 
         # Create Alembic config
         alembic_cfg = Config(str(alembic_ini))
 
+        # Set the script location explicitly
+        alembic_cfg.set_main_option("script_location", str(project_root / "backend" / "alembic"))
+
+        logger.info("Running alembic upgrade head...")
         # Run migrations to latest version
         command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations completed successfully")
+        logger.info("✓ Database migrations completed successfully")
         return True
 
     except Exception as e:
-        logger.error(f"Migration failed: {e}", exc_info=True)
-        logger.warning("Continuing without migrations - database may be in inconsistent state")
-        return False
+        logger.error(f"✗ Alembic migration failed: {e}", exc_info=True)
+        logger.info("Attempting direct SQL migration as fallback...")
+        # Try direct SQL migration as fallback
+        try:
+            db = SessionLocal()
+            try:
+                return run_direct_migration(db)
+            finally:
+                db.close()
+        except Exception as fallback_error:
+            logger.error(f"✗ Fallback migration also failed: {fallback_error}", exc_info=True)
+            return False
 
 
 def init_database_with_retry(max_retries=5, retry_delay=2):
