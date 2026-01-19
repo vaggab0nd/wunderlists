@@ -137,6 +137,7 @@ def run_migrations():
         # CRITICAL: Verify schema is actually complete before trusting alembic_version
         # If alembic_version says migration is done but schema is incomplete, reset it
         db = SessionLocal()
+        schema_is_complete = False
         try:
             logger.info("Validating database schema completeness...")
             # Check if users table exists with required columns
@@ -167,7 +168,9 @@ def run_migrations():
                 """))
                 tasks_has_user_id = result.scalar()
 
-            if not users_table_complete or (tasks_exists and not tasks_has_user_id):
+            schema_is_complete = users_table_complete and (not tasks_exists or tasks_has_user_id)
+
+            if not schema_is_complete:
                 logger.warning("⚠️ Schema is incomplete but alembic_version may show migration as complete!")
                 logger.warning("Resetting alembic_version to force re-migration...")
                 # Delete alembic_version to force re-migration
@@ -175,12 +178,20 @@ def run_migrations():
                 db.commit()
                 logger.info("✓ Reset alembic_version - migration will run fresh")
             else:
-                logger.info("✓ Schema validation passed")
+                logger.info("✓ Schema validation passed - schema is complete")
         except Exception as e:
             logger.info(f"Schema validation check failed (expected for new DB): {e}")
         finally:
             db.close()
 
+        # If schema is already complete, skip Alembic to avoid hanging
+        if schema_is_complete:
+            logger.info("✓ Schema is complete, skipping Alembic upgrade (prevents hanging)")
+            logger.info("✓ Database migrations completed successfully (schema verified)")
+            return True
+
+        # Schema is incomplete, run Alembic migration
+        logger.info("Schema incomplete, running Alembic migration...")
         # Create Alembic config
         alembic_cfg = Config(str(alembic_ini))
 
