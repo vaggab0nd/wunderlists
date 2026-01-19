@@ -9,6 +9,7 @@ from backend.app.schemas.list import ListCreate, ListUpdate, ListResponse
 router = APIRouter(prefix="/api/lists", tags=["lists"])
 
 @router.get("/", response_model=List[ListResponse])
+@router.get("", response_model=List[ListResponse])
 def get_lists(
     skip: int = 0,
     limit: int = 100,
@@ -33,6 +34,7 @@ def get_list(list_id: int, db: Session = Depends(get_db)):
     return list_item
 
 @router.post("/", response_model=ListResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=ListResponse, status_code=status.HTTP_201_CREATED)
 def create_list(list_data: ListCreate, db: Session = Depends(get_db)):
     """Create a new list"""
     db_list = ListModel(**list_data.model_dump())

@@ -9,6 +9,7 @@ from backend.app.schemas.location import LocationCreate, LocationUpdate, Locatio
 router = APIRouter(prefix="/api/locations", tags=["locations"])
 
 @router.get("/", response_model=List[LocationResponse])
+@router.get("", response_model=List[LocationResponse])
 def get_locations(
     skip: int = 0,
     limit: int = 100,
@@ -33,6 +34,7 @@ def get_location(location_id: int, db: Session = Depends(get_db)):
     return location
 
 @router.post("/", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=LocationResponse, status_code=status.HTTP_201_CREATED)
 def create_location(location: LocationCreate, db: Session = Depends(get_db)):
     """Create a new location"""
     db_location = Location(**location.model_dump())

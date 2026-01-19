@@ -9,15 +9,14 @@ from backend.app.schemas.task import TaskCreate, TaskUpdate, TaskResponse
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
-@router.get("/", response_model=List[TaskResponse])
-def get_tasks(
+def _get_tasks_impl(
     skip: int = 0,
     limit: int = 100,
     list_id: int = None,
     is_completed: bool = None,
     db: Session = Depends(get_db)
 ):
-    """Get all tasks with optional filtering"""
+    """Implementation for getting all tasks with optional filtering"""
     query = db.query(Task)
 
     if list_id is not None:
@@ -28,6 +27,18 @@ def get_tasks(
     tasks = query.offset(skip).limit(limit).all()
     return tasks
 
+@router.get("/", response_model=List[TaskResponse])
+@router.get("", response_model=List[TaskResponse])
+def get_tasks(
+    skip: int = 0,
+    limit: int = 100,
+    list_id: int = None,
+    is_completed: bool = None,
+    db: Session = Depends(get_db)
+):
+    """Get all tasks with optional filtering"""
+    return _get_tasks_impl(skip, limit, list_id, is_completed, db)
+
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task(task_id: int, db: Session = Depends(get_db)):
     """Get a specific task by ID"""
@@ -37,6 +48,7 @@ def get_task(task_id: int, db: Session = Depends(get_db)):
     return task
 
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 def create_task(task: TaskCreate, db: Session = Depends(get_db)):
     """Create a new task"""
     db_task = Task(**task.model_dump())
