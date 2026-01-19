@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from backend.app.database import Base
 
@@ -20,3 +21,9 @@ class CalendarEvent(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Foreign keys
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # Relationships
+    user = relationship("User", back_populates="calendar_events")

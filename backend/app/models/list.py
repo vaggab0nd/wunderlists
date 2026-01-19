@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from backend.app.database import Base
@@ -15,5 +15,9 @@ class List(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # Foreign keys
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
     # Relationships
     tasks = relationship("Task", back_populates="list", cascade="all, delete-orphan")
+    user = relationship("User", back_populates="lists")
