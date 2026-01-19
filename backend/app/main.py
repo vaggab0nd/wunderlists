@@ -59,12 +59,14 @@ def run_direct_migration(db_session):
                     updated_at TIMESTAMP WITH TIME ZONE,
                     last_login TIMESTAMP WITH TIME ZONE
                 );
-                CREATE INDEX ix_users_id ON users(id);
-                CREATE INDEX ix_users_email ON users(email);
-                CREATE INDEX ix_users_username ON users(username);
+                CREATE INDEX IF NOT EXISTS ix_users_id ON users(id);
+                CREATE INDEX IF NOT EXISTS ix_users_email ON users(email);
+                CREATE INDEX IF NOT EXISTS ix_users_username ON users(username);
             """))
             db_session.commit()
             logger.info("✓ Users table created")
+        else:
+            logger.info("✓ Users table already exists, skipping creation")
 
         # Add user_id column to existing tables if they don't have it
         for table_name in ['tasks', 'lists', 'calendar_events', 'locations']:
@@ -92,10 +94,12 @@ def run_direct_migration(db_session):
                     db_session.execute(text(f"""
                         ALTER TABLE {table_name}
                         ADD COLUMN user_id INTEGER REFERENCES users(id);
-                        CREATE INDEX ix_{table_name}_user_id ON {table_name}(user_id);
+                        CREATE INDEX IF NOT EXISTS ix_{table_name}_user_id ON {table_name}(user_id);
                     """))
                     db_session.commit()
                     logger.info(f"✓ Added user_id to {table_name}")
+                else:
+                    logger.info(f"✓ Table {table_name} already has user_id column")
 
         logger.info("✓ Direct SQL migration completed successfully")
         return True
@@ -170,11 +174,24 @@ def init_database_with_retry(max_retries=5, retry_delay=2):
             logger.info("Database connection test successful")
 
             # Run migrations first to ensure schema is up to date
-            run_migrations()
+            migration_success = run_migrations()
 
             # Create any remaining tables (for new installations)
-            Base.metadata.create_all(bind=engine)
-            logger.info("Database tables created successfully")
+            # Only needed if migration didn't run (fresh install)
+            try:
+                # checkfirst=True ensures we only create tables that don't exist
+                Base.metadata.create_all(bind=engine, checkfirst=True)
+                logger.info("✓ Database schema verification complete")
+            except Exception as create_error:
+                # If create_all fails (e.g., table exists with different structure),
+                # it's fine - migration already handled schema
+                if migration_success:
+                    logger.warning(f"create_all() failed but migration succeeded: {create_error}")
+                    logger.info("✓ Database schema is ready (via migrations)")
+                else:
+                    logger.error(f"Both migration and create_all failed: {create_error}")
+                    raise
+
             return True
 
         except Exception as e:
