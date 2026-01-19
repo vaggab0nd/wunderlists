@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from sqlalchemy import DateTime
 from backend.app.database import Base
 
 class Location(Base):
@@ -16,3 +16,9 @@ class Location(Base):
     show_in_dashboard = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # Foreign keys
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # Relationships
+    user = relationship("User", back_populates="locations")
