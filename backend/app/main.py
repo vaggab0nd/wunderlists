@@ -188,9 +188,17 @@ def run_migrations():
         alembic_cfg.set_main_option("script_location", str(project_root / "backend" / "alembic"))
 
         logger.info("Running alembic upgrade head...")
-        # Run migrations to latest version
-        command.upgrade(alembic_cfg, "head")
-        logger.info("✓ Database migrations completed successfully")
+        try:
+            # Run migrations to latest version
+            import time
+            start_time = time.time()
+            command.upgrade(alembic_cfg, "head")
+            elapsed = time.time() - start_time
+            logger.info(f"✓ Database migrations completed successfully (took {elapsed:.2f}s)")
+        except Exception as upgrade_error:
+            logger.error(f"✗ command.upgrade() failed: {upgrade_error}", exc_info=True)
+            raise
+
         return True
 
     except Exception as e:

@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from backend.app.database import Base
-from backend.app.models import Task, List, CalendarEvent, Location
+from backend.app.models import User, Task, List, CalendarEvent, Location
 
 # this is the Alembic Config object
 config = context.config
