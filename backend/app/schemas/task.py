@@ -16,6 +16,7 @@ class TaskBase(BaseModel):
     due_date: Optional[datetime] = None
     reminder_date: Optional[datetime] = None
     list_id: Optional[int] = None
+    user_id: Optional[int] = Field(None, description="User assigned to this task")
 
 class TaskCreate(TaskBase):
     pass
@@ -28,6 +29,7 @@ class TaskUpdate(BaseModel):
     due_date: Optional[datetime] = None
     reminder_date: Optional[datetime] = None
     list_id: Optional[int] = None
+    user_id: Optional[int] = Field(None, description="User assigned to this task")
 
 class TaskResponse(TaskBase):
     id: int
