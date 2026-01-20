@@ -18,6 +18,8 @@ from backend.app.routes import tasks_router, lists_router, calendar_events_route
 from backend.app.routes.weather import router as weather_router
 from backend.app.routes.calendar_sync import router as calendar_sync_router
 from backend.app.routes.smart_tasks import router as smart_tasks_router
+from backend.app.models.user import User
+import hashlib
 
 # Configure logging
 logging.basicConfig(
@@ -31,6 +33,46 @@ logger.info(f"Starting Wunderlists application...")
 logger.info(f"Environment variables available: DATABASE_URL={bool(os.getenv('DATABASE_URL'))}, "
            f"DATABASE_PRIVATE_URL={bool(os.getenv('DATABASE_PRIVATE_URL'))}, "
            f"PGURL={bool(os.getenv('PGURL'))}")
+
+def ensure_default_user():
+    """Ensure a default user exists in the database"""
+    try:
+        db = SessionLocal()
+        try:
+            # Check if any users exist
+            user_count = db.query(User).count()
+
+            if user_count == 0:
+                logger.info("No users found, creating default user...")
+
+                # Create default user: Joe O'Reilly
+                default_user = User(
+                    email="joeoreilly@gmail.com",
+                    username="joeoreilly",
+                    full_name="Joe O'Reilly",
+                    hashed_password=hashlib.sha256("dummy_joeoreilly@gmail.com".encode()).hexdigest(),
+                    is_active=True,
+                    is_superuser=False
+                )
+
+                db.add(default_user)
+                db.commit()
+                db.refresh(default_user)
+
+                logger.info(f"✓ Created default user: {default_user.full_name} ({default_user.email})")
+                logger.info(f"  User ID: {default_user.id}")
+            else:
+                logger.info(f"✓ Found {user_count} existing user(s), skipping default user creation")
+
+        except Exception as e:
+            logger.error(f"Error ensuring default user: {e}")
+            db.rollback()
+        finally:
+            db.close()
+
+    except Exception as e:
+        logger.error(f"Failed to check/create default user: {e}")
+
 
 def run_direct_migration(db_session):
     """Fallback: Run migration directly via SQL if Alembic fails"""
@@ -253,6 +295,9 @@ def init_database_with_retry(max_retries=5, retry_delay=2):
                 logger.warning("Migration did not complete, using create_all() as fallback")
                 Base.metadata.create_all(bind=engine, checkfirst=True)
                 logger.info("✓ Database schema created via create_all()")
+
+            # Ensure default user exists
+            ensure_default_user()
 
             return True
 
