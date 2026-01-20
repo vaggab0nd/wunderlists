@@ -14,8 +14,10 @@ import sys
 from pathlib import Path
 
 from backend.app.database import engine, Base, SessionLocal
-from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router
+from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router, users_router
 from backend.app.routes.weather import router as weather_router
+from backend.app.routes.calendar_sync import router as calendar_sync_router
+from backend.app.routes.smart_tasks import router as smart_tasks_router
 
 # Configure logging
 logging.basicConfig(
@@ -363,11 +365,14 @@ async def startup_event():
     logger.info("=" * 60)
 
 # Include routers
+app.include_router(users_router)
 app.include_router(tasks_router)
 app.include_router(lists_router)
 app.include_router(calendar_events_router)
 app.include_router(locations_router)
 app.include_router(weather_router)
+app.include_router(calendar_sync_router)
+app.include_router(smart_tasks_router)
 
 # Mount static files
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")

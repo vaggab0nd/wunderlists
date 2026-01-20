@@ -14,6 +14,7 @@ def _get_tasks_impl(
     limit: int = 100,
     list_id: int = None,
     is_completed: bool = None,
+    user_id: int = None,
     db: Session = Depends(get_db)
 ):
     """Implementation for getting all tasks with optional filtering"""
@@ -23,6 +24,8 @@ def _get_tasks_impl(
         query = query.filter(Task.list_id == list_id)
     if is_completed is not None:
         query = query.filter(Task.is_completed == is_completed)
+    if user_id is not None:
+        query = query.filter(Task.user_id == user_id)
 
     tasks = query.offset(skip).limit(limit).all()
     return tasks
@@ -34,10 +37,11 @@ def get_tasks(
     limit: int = 100,
     list_id: int = None,
     is_completed: bool = None,
+    user_id: int = None,
     db: Session = Depends(get_db)
 ):
-    """Get all tasks with optional filtering"""
-    return _get_tasks_impl(skip, limit, list_id, is_completed, db)
+    """Get all tasks with optional filtering by list, completion status, or assigned user"""
+    return _get_tasks_impl(skip, limit, list_id, is_completed, user_id, db)
 
 @router.get("/{task_id}", response_model=TaskResponse)
 def get_task(task_id: int, db: Session = Depends(get_db)):
