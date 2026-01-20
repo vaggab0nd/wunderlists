@@ -16,6 +16,7 @@ from pathlib import Path
 from backend.app.database import engine, Base, SessionLocal
 from backend.app.routes import tasks_router, lists_router, calendar_events_router, locations_router, users_router
 from backend.app.routes.weather import router as weather_router
+from backend.app.routes.weather_alerts import router as weather_alerts_router
 from backend.app.routes.calendar_sync import router as calendar_sync_router
 from backend.app.routes.smart_tasks import router as smart_tasks_router
 from backend.app.models.user import User
@@ -416,6 +417,7 @@ app.include_router(lists_router)
 app.include_router(calendar_events_router)
 app.include_router(locations_router)
 app.include_router(weather_router)
+app.include_router(weather_alerts_router)
 app.include_router(calendar_sync_router)
 app.include_router(smart_tasks_router)
 
