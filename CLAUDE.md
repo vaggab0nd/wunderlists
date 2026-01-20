@@ -29,6 +29,11 @@ This is a comprehensive task management and life organization application built 
 
 ### Frontend Architecture
 
+**Frontend Repository**
+- Frontend is hosted separately at: https://github.com/vaggab0nd/your-digital-hub
+- Deployed and running on Lovable platform
+- Connects to this backend API
+
 **Vanilla JavaScript Approach**
 - No framework overhead for faster initial load
 - Direct DOM manipulation for simplicity
@@ -88,29 +93,23 @@ backend/app/
 ├── config.py         # Environment configuration
 ├── database.py       # DB connection and session management
 └── main.py           # FastAPI application entry point
-
-frontend/
-├── static/
-│   ├── css/styles.css    # All styling
-│   └── js/app.js         # All client-side logic
-└── templates/
-    └── index.html        # Main SPA template
 ```
+
+**Note:** Frontend is maintained in a separate repository at https://github.com/vaggab0nd/your-digital-hub and hosted on Lovable.
 
 ## Development Workflow
 
 ### Adding a New Feature
 
-1. **Backend**
+1. **Backend** (This Repository)
    - Create model in `backend/app/models/`
    - Add Pydantic schemas in `backend/app/schemas/`
    - Implement routes in `backend/app/routes/`
    - Register router in `main.py`
 
-2. **Frontend**
-   - Add UI elements to `index.html`
-   - Add styles to `styles.css`
-   - Implement logic in `app.js`
+2. **Frontend** (Separate Repository)
+   - Frontend changes are made in https://github.com/vaggab0nd/your-digital-hub
+   - Deployed automatically via Lovable platform
 
 ### Database Migrations
 

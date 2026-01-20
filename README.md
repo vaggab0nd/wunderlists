@@ -54,22 +54,25 @@ A modern task tracking and life organization application inspired by the beloved
    ```
 
 4. **Access the application**
-   - Open your browser to `http://localhost:8000`
-   - API documentation available at `http://localhost:8000/docs`
+   - Backend API: `http://localhost:8000`
+   - API documentation: `http://localhost:8000/docs`
+   - Frontend: Hosted separately at https://github.com/vaggab0nd/your-digital-hub
 
 ## 🛠️ Tech Stack
 
-### Backend
+### Backend (This Repository)
 - **FastAPI** - Modern, fast Python web framework
 - **PostgreSQL** - Robust relational database
 - **SQLAlchemy** - Powerful ORM
 - **Alembic** - Database migrations
 - **Pydantic** - Data validation
 
-### Frontend
-- **Vanilla JavaScript** - Fast and lightweight
-- **Modern CSS** - Clean, responsive design
-- **No frameworks** - Simple and maintainable
+### Frontend (Separate Repository)
+- **Repository:** https://github.com/vaggab0nd/your-digital-hub
+- **Hosting:** Lovable platform
+- **Stack:** Vanilla JavaScript - Fast and lightweight
+- **Styling:** Modern CSS - Clean, responsive design
+- **Architecture:** No frameworks - Simple and maintainable
 
 ### Infrastructure
 - **Docker** - Containerized deployment
@@ -78,7 +81,7 @@ A modern task tracking and life organization application inspired by the beloved
 ## 📁 Project Structure
 
 ```
-wunderlists/
+wunderlists/ (Backend API)
 ├── backend/
 │   ├── app/
 │   │   ├── models/          # SQLAlchemy database models
@@ -89,16 +92,13 @@ wunderlists/
 │   │   ├── config.py        # App configuration
 │   │   └── main.py          # FastAPI application
 │   └── alembic/             # Database migrations
-├── frontend/
-│   ├── static/
-│   │   ├── css/            # Stylesheets
-│   │   └── js/             # JavaScript
-│   └── templates/          # HTML templates
 ├── docker-compose.yml      # Docker orchestration
 ├── Dockerfile             # Container configuration
 ├── requirements.txt       # Python dependencies
 └── README.md
 ```
+
+**Note:** Frontend is maintained in a separate repository at https://github.com/vaggab0nd/your-digital-hub and hosted on Lovable.
 
 ## 🔧 Development
 
