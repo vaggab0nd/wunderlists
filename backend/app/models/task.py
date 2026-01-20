@@ -17,6 +17,7 @@ class Task(Base):
     title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     is_completed = Column(Boolean, default=False)
+    is_travel_day = Column(Boolean, default=False)
     priority = Column(SQLEnum(Priority), default=Priority.MEDIUM)
     due_date = Column(DateTime(timezone=True), nullable=True)
     reminder_date = Column(DateTime(timezone=True), nullable=True)
