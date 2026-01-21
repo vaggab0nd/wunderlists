@@ -15,6 +15,7 @@ def generate_dummy_password(email: str) -> str:
     return hashlib.sha256(f"dummy_{email}".encode()).hexdigest()
 
 @router.post("/", response_model=UserResponse, status_code=201)
+@router.post("", response_model=UserResponse, status_code=201)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     """
     Create a new user profile.
@@ -53,6 +54,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 @router.get("/", response_model=List[UserResponse])
+@router.get("", response_model=List[UserResponse])
 def list_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     """
     Get all users.
