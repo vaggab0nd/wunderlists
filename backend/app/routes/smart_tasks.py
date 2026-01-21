@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from backend.app.database import get_db
 from backend.app.models.task import Task, Priority
 
-router = APIRouter(prefix="/api/smart-tasks", tags=["smart-tasks"])
+router = APIRouter(tags=["smart-tasks"])
 
 def calculate_urgency_score(task: Task, now: datetime) -> int:
     """
