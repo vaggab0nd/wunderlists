@@ -146,6 +146,36 @@ def run_direct_migration(db_session):
                 else:
                     logger.info(f"✓ Table {table_name} already has user_id column")
 
+        # Add is_travel_day column to tasks table if it doesn't have it (migration 002)
+        result = db_session.execute(text("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables
+                WHERE table_name = 'tasks'
+            );
+        """))
+        tasks_exists = result.scalar()
+
+        if tasks_exists:
+            # Check if is_travel_day column exists
+            result = db_session.execute(text("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.columns
+                    WHERE table_name = 'tasks' AND column_name = 'is_travel_day'
+                );
+            """))
+            is_travel_day_exists = result.scalar()
+
+            if not is_travel_day_exists:
+                logger.info("Adding is_travel_day column to tasks table...")
+                db_session.execute(text("""
+                    ALTER TABLE tasks
+                    ADD COLUMN is_travel_day BOOLEAN DEFAULT FALSE NOT NULL;
+                """))
+                db_session.commit()
+                logger.info("✓ Added is_travel_day to tasks")
+            else:
+                logger.info("✓ Table tasks already has is_travel_day column")
+
         logger.info("✓ Direct SQL migration completed successfully")
         return True
 
@@ -204,6 +234,7 @@ def run_migrations():
             tasks_exists = result.scalar()
 
             tasks_has_user_id = True  # Assume true if tasks doesn't exist
+            tasks_has_is_travel_day = True  # Assume true if tasks doesn't exist
             if tasks_exists:
                 result = db.execute(text("""
                     SELECT EXISTS (
@@ -213,7 +244,16 @@ def run_migrations():
                 """))
                 tasks_has_user_id = result.scalar()
 
-            schema_is_complete = users_table_complete and (not tasks_exists or tasks_has_user_id)
+                # Check if tasks table has is_travel_day column (migration 002)
+                result = db.execute(text("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.columns
+                        WHERE table_name = 'tasks' AND column_name = 'is_travel_day'
+                    );
+                """))
+                tasks_has_is_travel_day = result.scalar()
+
+            schema_is_complete = users_table_complete and (not tasks_exists or (tasks_has_user_id and tasks_has_is_travel_day))
 
             if not schema_is_complete:
                 logger.warning("⚠️ Schema is incomplete but alembic_version may show migration as complete!")
