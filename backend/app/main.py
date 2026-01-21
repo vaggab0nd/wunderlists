@@ -452,6 +452,8 @@ async def startup_event():
 
 # Include routers
 app.include_router(users_router)
+# Smart tasks router must come BEFORE tasks_router to prevent /{task_id} from catching /suggestions
+app.include_router(smart_tasks_router, prefix="/api/tasks")
 app.include_router(tasks_router)
 app.include_router(lists_router)
 app.include_router(calendar_events_router)
@@ -459,7 +461,6 @@ app.include_router(locations_router)
 app.include_router(weather_router)
 app.include_router(weather_alerts_router)
 app.include_router(calendar_sync_router)
-app.include_router(smart_tasks_router, prefix="/api/tasks")
 
 # Mount static files
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
