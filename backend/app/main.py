@@ -459,7 +459,7 @@ app.include_router(locations_router)
 app.include_router(weather_router)
 app.include_router(weather_alerts_router)
 app.include_router(calendar_sync_router)
-app.include_router(smart_tasks_router)
+app.include_router(smart_tasks_router, prefix="/api/tasks")
 
 # Mount static files
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
