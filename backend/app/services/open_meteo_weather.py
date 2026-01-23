@@ -40,6 +40,90 @@ class OpenMeteoWeatherService:
     def __init__(self):
         self.base_url = "https://api.open-meteo.com/v1/forecast"
 
+    async def get_current_weather(
+        self,
+        location_key: str
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get current weather for a location (today's forecast).
+
+        Args:
+            location_key: "Dublin" or "Île de Ré"
+
+        Returns:
+            Weather data dict with temperature, conditions, and basic info
+        """
+        if location_key not in self.LOCATIONS:
+            logger.error(f"Unknown location: {location_key}")
+            return None
+
+        location = self.LOCATIONS[location_key]
+
+        try:
+            # Open-Meteo free API parameters for current weather
+            params = {
+                "latitude": location["latitude"],
+                "longitude": location["longitude"],
+                "timezone": location["timezone"],
+                "current": [
+                    "temperature_2m",
+                    "weathercode",
+                    "windspeed_10m",
+                    "relative_humidity_2m"
+                ],
+                "daily": [
+                    "temperature_2m_max",
+                    "temperature_2m_min",
+                    "weathercode"
+                ],
+                "forecast_days": 1
+            }
+
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    self.base_url,
+                    params=params,
+                    timeout=10.0
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+
+                    # Extract current weather
+                    current = data.get("current", {})
+                    daily = data.get("daily", {})
+
+                    temp_current = current.get("temperature_2m", 0)
+                    weathercode = current.get("weathercode", 0)
+                    windspeed = current.get("windspeed_10m", 0)
+                    humidity = current.get("relative_humidity_2m", 0)
+
+                    # Get today's min/max from daily forecast
+                    temp_max = daily.get("temperature_2m_max", [temp_current])[0]
+                    temp_min = daily.get("temperature_2m_min", [temp_current])[0]
+
+                    # Interpret weather code
+                    weather_description = self._interpret_weather_code(weathercode)
+
+                    return {
+                        "location": location["name"],
+                        "location_key": location_key,
+                        "temperature": round(temp_current, 1),
+                        "temperature_max": round(temp_max, 1),
+                        "temperature_min": round(temp_min, 1),
+                        "weather_description": weather_description,
+                        "weathercode": weathercode,
+                        "windspeed_kmh": round(windspeed, 1),
+                        "humidity": humidity
+                    }
+                else:
+                    logger.error(f"Open-Meteo API error: {response.status_code}")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Failed to fetch current weather from Open-Meteo: {str(e)}", exc_info=True)
+            return None
+
     async def get_weather_for_date(
         self,
         location_key: str,

@@ -181,6 +181,61 @@ async def test_weather_service() -> Dict[str, Any]:
     }
 
 
+@router.get("/current")
+async def get_current_weather() -> Dict[str, Any]:
+    """
+    Get current weather for both Dublin and Île de Ré.
+
+    This endpoint provides real-time weather data for the dashboard weather panel.
+    Unlike /alerts, this always returns weather data regardless of travel tasks.
+
+    Returns:
+        {
+            "locations": [
+                {
+                    "location": "Dublin, Ireland",
+                    "location_key": "Dublin",
+                    "temperature": 12.5,
+                    "temperature_max": 15.0,
+                    "temperature_min": 10.0,
+                    "weather_description": "Partly cloudy",
+                    "weathercode": 2,
+                    "windspeed_kmh": 15.0,
+                    "humidity": 75
+                },
+                ...
+            ],
+            "updated_at": "2024-01-18T10:00:00Z"
+        }
+    """
+    logger.info("Fetching current weather for dashboard locations")
+
+    locations_weather = []
+
+    # Fetch weather for both locations
+    for location_key in ["Dublin", "Île de Ré"]:
+        weather = await weather_service.get_current_weather(location_key)
+
+        if weather:
+            locations_weather.append(weather)
+        else:
+            logger.warning(f"Failed to fetch weather for {location_key}")
+            # Return error info so frontend can show something
+            locations_weather.append({
+                "location": f"{location_key}, Ireland" if location_key == "Dublin" else f"{location_key}, France",
+                "location_key": location_key,
+                "error": "Failed to fetch weather data",
+                "temperature": None,
+                "weather_description": "Unavailable"
+            })
+
+    return {
+        "locations": locations_weather,
+        "updated_at": datetime.now().isoformat(),
+        "data_source": "Open-Meteo"
+    }
+
+
 @router.get("/locations")
 async def get_monitored_locations() -> Dict[str, Any]:
     """
