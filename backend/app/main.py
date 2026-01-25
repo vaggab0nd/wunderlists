@@ -19,6 +19,7 @@ from backend.app.routes.weather import router as weather_router
 from backend.app.routes.weather_alerts import router as weather_alerts_router
 from backend.app.routes.calendar_sync import router as calendar_sync_router
 from backend.app.routes.smart_tasks import router as smart_tasks_router
+from backend.app.routes.admin import router as admin_router
 from backend.app.models.user import User
 import hashlib
 
@@ -461,6 +462,7 @@ app.include_router(locations_router)
 app.include_router(weather_router)
 app.include_router(weather_alerts_router)
 app.include_router(calendar_sync_router)
+app.include_router(admin_router)
 
 # Mount static files
 frontend_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend")
