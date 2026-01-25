@@ -249,93 +249,25 @@ def get_task_suggestions(
     """
     Get comprehensive task suggestions and statistics.
 
-    Provides an overview of task status with actionable insights:
-    - Overdue count
-    - Due today count
-    - Upcoming this week
-    - Top 5 most urgent tasks
-    - Productivity stats
+    CURRENTLY DISABLED - Returns empty data to hide the suggestions box.
 
     Args:
         user_id: Optional user filter
 
     Returns:
-        Dict with task statistics and suggestions
+        Dict with empty task statistics (feature disabled)
     """
-    now = datetime.now()
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
-    week_end = now + timedelta(days=7)
-
-    base_query = db.query(Task).filter(Task.is_completed == False)
-    if user_id:
-        base_query = base_query.filter(Task.user_id == user_id)
-
-    # Count overdue
-    overdue_count = base_query.filter(Task.due_date < now).count()
-
-    # Count due today
-    due_today_count = base_query.filter(
-        Task.due_date >= today_start,
-        Task.due_date <= today_end
-    ).count()
-
-    # Count due this week
-    due_this_week_count = base_query.filter(
-        Task.due_date >= now,
-        Task.due_date <= week_end
-    ).count()
-
-    # Get top 5 urgent tasks
-    all_tasks = base_query.all()
-    task_scores = [
-        {
-            'task': task,
-            'score': calculate_urgency_score(task, now)
-        }
-        for task in all_tasks
-    ]
-    task_scores.sort(key=lambda x: x['score'], reverse=True)
-
-    top_tasks = []
-    for item in task_scores[:5]:
-        task = item['task']
-        top_tasks.append({
-            'id': task.id,
-            'title': task.title,
-            'priority': task.priority.value,
-            'due_date': task.due_date.isoformat() if task.due_date else None,
-            'urgency_score': item['score']
-        })
-
-    # Total tasks stats
-    total_incomplete = len(all_tasks)
-    total_completed_query = db.query(Task).filter(Task.is_completed == True)
-    if user_id:
-        total_completed_query = total_completed_query.filter(Task.user_id == user_id)
-    total_completed = total_completed_query.count()
-
-    # Generate suggestions
-    suggestions = []
-    if overdue_count > 0:
-        suggestions.append(f"You have {overdue_count} overdue task{'s' if overdue_count > 1 else ''}. Review and reschedule if needed.")
-    if due_today_count > 0:
-        suggestions.append(f"{due_today_count} task{'s are' if due_today_count > 1 else ' is'} due today. Focus on these first.")
-    if due_this_week_count > 5:
-        suggestions.append(f"You have {due_this_week_count} tasks due this week. Consider spreading them out.")
-    if total_incomplete > 20:
-        suggestions.append(f"You have {total_incomplete} open tasks. Consider archiving or delegating some.")
-    if not suggestions:
-        suggestions.append("Great job! Your tasks are well-organized.")
-
+    # Feature temporarily disabled - return empty data
+    # Frontend will hide the suggestions box when there are no suggestions
     return {
         'stats': {
-            'overdue': overdue_count,
-            'due_today': due_today_count,
-            'due_this_week': due_this_week_count,
-            'total_incomplete': total_incomplete,
-            'total_completed': total_completed
+            'overdue': 0,
+            'due_today': 0,
+            'due_this_week': 0,
+            'total_incomplete': 0,
+            'total_completed': 0
         },
-        'top_urgent_tasks': top_tasks,
-        'suggestions': suggestions
+        'top_urgent_tasks': [],
+        'suggestions': [],
+        'feature_enabled': False  # Signal to frontend that this feature is disabled
     }
