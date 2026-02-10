@@ -3,20 +3,24 @@ runtime: python3
 build:
   commands:
     pre-build:
-      - echo "Installing dependencies..."
-      - pip install --upgrade pip
+      - echo "=== Pre-Build Phase ==="
+      - python --version
+      - pip install --upgrade pip setuptools wheel
     build:
-      - echo "Building application..."
+      - echo "=== Build Phase ==="
+      - echo "Installing Python dependencies..."
       - pip install -r requirements.txt
+      - echo "Dependencies installed successfully"
     post-build:
+      - echo "=== Post-Build Phase ==="
       - echo "Running database migrations..."
       - cd backend && alembic upgrade head
+      - echo "Migrations completed"
 run:
   runtime-version: 3.11
-  command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000
+  command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
   network:
     port: 8000
-    env: []
   env:
     - name: HOST
       value: "0.0.0.0"
@@ -24,3 +28,10 @@ run:
       value: "8000"
     - name: PYTHONUNBUFFERED
       value: "1"
+    - name: PYTHONDONTWRITEBYTECODE
+      value: "1"
+  # Note: Set these in App Runner Console:
+  # - DATABASE_URL (required)
+  # - DEBUG=False
+  # - OPENWEATHER_API_KEY (optional)
+  # - ALLOWED_ORIGINS (for CORS)
