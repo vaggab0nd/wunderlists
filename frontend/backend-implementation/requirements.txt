@@ -1,0 +1,2 @@
+# Weather service dependencies
+httpx>=0.24.0  # For async HTTP requests to Open-Meteo API

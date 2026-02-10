@@ -56,53 +56,63 @@ A modern task tracking and life organization application inspired by the beloved
 4. **Access the application**
    - Backend API: `http://localhost:8000`
    - API documentation: `http://localhost:8000/docs`
-   - Frontend: Hosted separately at https://github.com/vaggab0nd/your-digital-hub
+   - Frontend: See Frontend Setup section below
 
 ## 🛠️ Tech Stack
 
-### Backend (This Repository)
+### Backend
 - **FastAPI** - Modern, fast Python web framework
 - **PostgreSQL** - Robust relational database
 - **SQLAlchemy** - Powerful ORM
 - **Alembic** - Database migrations
 - **Pydantic** - Data validation
 
-### Frontend (Separate Repository)
-- **Repository:** https://github.com/vaggab0nd/your-digital-hub
-- **Hosting:** Lovable platform
-- **Stack:** Vanilla JavaScript - Fast and lightweight
-- **Styling:** Modern CSS - Clean, responsive design
-- **Architecture:** No frameworks - Simple and maintainable
+### Frontend
+- **React 18** - Modern UI framework
+- **TypeScript** - Type-safe development
+- **Vite** - Fast build tool and dev server
+- **shadcn-ui** - Component library
+- **Tailwind CSS** - Utility-first styling
+- **React Query** - Server state management
+- **React Router** - Client-side routing
 
 ### Infrastructure
 - **Docker** - Containerized deployment
 - **Docker Compose** - Easy multi-container orchestration
+- **Monorepo** - Frontend and backend in single repository
 
 ## 📁 Project Structure
 
 ```
-wunderlists/ (Backend API)
-├── backend/
+wunderlists/ (Monorepo)
+├── backend/                # FastAPI Backend
 │   ├── app/
-│   │   ├── models/          # SQLAlchemy database models
-│   │   ├── routes/          # API endpoints
-│   │   ├── schemas/         # Pydantic validation schemas
-│   │   ├── services/        # Business logic (weather, etc.)
-│   │   ├── database.py      # Database configuration
-│   │   ├── config.py        # App configuration
-│   │   └── main.py          # FastAPI application
-│   └── alembic/             # Database migrations
+│   │   ├── models/         # SQLAlchemy database models
+│   │   ├── routes/         # API endpoints
+│   │   ├── schemas/        # Pydantic validation schemas
+│   │   ├── services/       # Business logic (weather, etc.)
+│   │   ├── database.py     # Database configuration
+│   │   ├── config.py       # App configuration
+│   │   └── main.py         # FastAPI application
+│   └── alembic/            # Database migrations
+├── frontend/               # React Frontend
+│   ├── src/
+│   │   ├── components/     # React components
+│   │   ├── pages/          # Route pages
+│   │   ├── hooks/          # Custom hooks
+│   │   └── App.tsx         # Root component
+│   ├── package.json
+│   └── vite.config.ts
 ├── docker-compose.yml      # Docker orchestration
-├── Dockerfile             # Container configuration
-├── requirements.txt       # Python dependencies
+├── Dockerfile              # Container configuration
+├── requirements.txt        # Python dependencies
+├── CLAUDE.md               # Detailed development notes
 └── README.md
 ```
 
-**Note:** Frontend is maintained in a separate repository at https://github.com/vaggab0nd/your-digital-hub and hosted on Lovable.
-
 ## 🔧 Development
 
-### Running without Docker
+### Backend Development (without Docker)
 
 1. **Create a virtual environment**
    ```bash
@@ -121,10 +131,55 @@ wunderlists/ (Backend API)
    - Create user: `wunderlists_user`
    - Update `DATABASE_URL` in `.env`
 
-4. **Run the application**
+4. **Run database migrations**
    ```bash
-   uvicorn backend.app.main:app --reload
+   alembic upgrade head
    ```
+
+5. **Run the backend server**
+   ```bash
+   cd backend
+   uvicorn app.main:app --reload
+   ```
+   Backend runs on `http://localhost:8000`
+
+### Frontend Development
+
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Edit `frontend/.env` and set:
+   ```
+   VITE_RAILWAY_API_URL=http://localhost:8000/api
+   ```
+
+4. **Run the development server**
+   ```bash
+   npm run dev
+   ```
+   Frontend runs on `http://localhost:5173`
+
+5. **Build for production**
+   ```bash
+   npm run build
+   ```
+
+### Running Both Simultaneously
+
+For full-stack development, run both backend and frontend:
+- Backend: Terminal 1 - `cd backend && uvicorn app.main:app --reload`
+- Frontend: Terminal 2 - `cd frontend && npm run dev`
 
 ### API Endpoints
 
@@ -219,17 +274,43 @@ This project is open source and available under the MIT License.
 
 ## 🗺️ Roadmap
 
-- [ ] Google Calendar integration
-- [ ] Task prioritization AI
+### Completed ✅
+- [x] Dark mode
+- [x] Task prioritization (AI-powered)
+- [x] Weather alerts for travel
+- [x] Habit tracking
+- [x] Note-taking
+- [x] Modern React frontend
+- [x] Monorepo consolidation
+
+### In Progress 🚧
+- [ ] Google Calendar integration (partial)
+- [ ] Mobile-responsive improvements
+
+### Planned 📋
 - [ ] Mobile app (React Native)
 - [ ] Recurring tasks
 - [ ] Task templates
 - [ ] Collaboration features
 - [ ] Email notifications
-- [ ] Dark mode
 - [ ] Export to CSV/PDF
 - [ ] Task time tracking
+- [ ] PWA capabilities
+
+## 📜 Project History
+
+**February 2026** - Consolidated frontend and backend into monorepo
+- Merged React frontend from separate repository (vaggab0nd/your-digital-hub)
+- Legacy vanilla JS frontend archived in `frontend-legacy-vanilla-js/`
+- Simplified development workflow
+
+**January 2026** - Initial development
+- FastAPI backend created
+- Vanilla JS frontend built separately
+- Deployed on Railway + Lovable
 
 ---
 
 Built with ❤️ for staying organized in a busy life
+
+**Inspired by Wunderlist** - In memory of a great productivity app (RIP, killed by Microsoft)
