@@ -110,6 +110,22 @@ wunderlists/ (Monorepo)
 └── README.md
 ```
 
+## ☁️ AWS Deployment
+
+This project includes comprehensive AWS deployment guides:
+
+- **[AWS_QUICK_START.md](./AWS_QUICK_START.md)** - Deploy to AWS in 30 minutes
+- **[AWS_DEPLOYMENT.md](./AWS_DEPLOYMENT.md)** - Complete deployment guide with security, monitoring, and best practices
+
+**Architecture:**
+- **Frontend**: AWS Amplify (auto-deploy from GitHub)
+- **Backend**: AWS App Runner (auto-deploy from GitHub)
+- **Database**: Amazon RDS PostgreSQL
+
+**Estimated Costs:**
+- Development: ~$40-65/month (includes free tier)
+- Production: ~$150-265/month
+
 ## 🔧 Development
 
 ### Backend Development (without Docker)
