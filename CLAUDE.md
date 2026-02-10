@@ -29,23 +29,31 @@ This is a comprehensive task management and life organization application built 
 
 ### Frontend Architecture
 
-**Frontend Repository**
-- Frontend is hosted separately at: https://github.com/vaggab0nd/your-digital-hub
-- Deployed and running on Lovable platform
-- Connects to this backend API
+**Monorepo Structure**
+- Frontend and backend now consolidated in a single repository
+- Modern React application located in `frontend/` directory
+- Legacy vanilla JS frontend preserved in `frontend-legacy-vanilla-js/`
+- Original separate repo: https://github.com/vaggab0nd/your-digital-hub (archived)
 
-**Vanilla JavaScript Approach**
-- No framework overhead for faster initial load
-- Direct DOM manipulation for simplicity
-- Modern ES6+ features
-- Async/await for API calls
+**React + TypeScript Stack**
+- **React 18.3.1**: Modern UI framework with hooks
+- **TypeScript 5.8.3**: Type-safe development
+- **Vite 5.4.19**: Fast build tool and dev server
+- **shadcn-ui**: Component library built on Radix UI
+- **Tailwind CSS 3.4.17**: Utility-first styling
+- **React Query**: Server state management
+- **React Router**: Client-side routing
 
-**UI/UX Design**
-- Card-based dashboard layout
-- Modal dialogs for data entry
-- Color-coded priorities for visual clarity
-- Real-time updates after CRUD operations
-- Empty states with helpful messages
+**Advanced Features**
+- AI-powered task prioritization
+- Weather alerts for travel locations (Open-Meteo API)
+- Smart task filtering (overdue, due today, prioritized)
+- Dark mode support with next-themes
+- Habit tracking with streak monitoring
+- Note-taking functionality
+- Backend health monitoring
+- Responsive mobile-first design
+- Testing suite with Vitest
 
 ### Integration Points
 
@@ -85,31 +93,69 @@ This is a comprehensive task management and life organization application built 
 ## File Structure
 
 ```
-backend/app/
-├── models/           # SQLAlchemy ORM models
-├── routes/           # API endpoint handlers
-├── schemas/          # Pydantic validation schemas
-├── services/         # Business logic (weather API)
-├── config.py         # Environment configuration
-├── database.py       # DB connection and session management
-└── main.py           # FastAPI application entry point
+wunderlists/
+├── backend/                      # FastAPI Backend
+│   └── app/
+│       ├── models/               # SQLAlchemy ORM models
+│       ├── routes/               # API endpoint handlers
+│       ├── schemas/              # Pydantic validation schemas
+│       ├── services/             # Business logic (weather API)
+│       ├── config.py             # Environment configuration
+│       ├── database.py           # DB connection and session management
+│       └── main.py               # FastAPI application entry point
+│
+├── frontend/                     # React Frontend (Lovable/Modern)
+│   ├── src/
+│   │   ├── components/           # React components
+│   │   │   ├── dashboard/        # Dashboard-specific components
+│   │   │   └── ui/               # shadcn-ui components
+│   │   ├── pages/                # Route pages
+│   │   ├── hooks/                # Custom React hooks (useRailwayData.ts)
+│   │   ├── lib/                  # Utility functions
+│   │   ├── test/                 # Test utilities
+│   │   ├── App.tsx               # Root component
+│   │   └── main.tsx              # Entry point
+│   ├── public/                   # Static assets
+│   ├── package.json              # Frontend dependencies
+│   ├── vite.config.ts            # Vite configuration
+│   ├── tailwind.config.ts        # Tailwind configuration
+│   └── CLAUDE.MD                 # Frontend documentation
+│
+├── frontend-legacy-vanilla-js/   # Archived vanilla JS frontend
+│   ├── templates/
+│   └── static/
+│
+├── docker-compose.yml            # Docker orchestration
+├── Dockerfile                    # Backend Docker image
+├── requirements.txt              # Python dependencies
+├── alembic.ini                   # Database migrations config
+├── CLAUDE.md                     # This file
+└── README.md                     # Project README
 ```
-
-**Note:** Frontend is maintained in a separate repository at https://github.com/vaggab0nd/your-digital-hub and hosted on Lovable.
 
 ## Development Workflow
 
 ### Adding a New Feature
 
-1. **Backend** (This Repository)
+1. **Backend Development**
    - Create model in `backend/app/models/`
    - Add Pydantic schemas in `backend/app/schemas/`
    - Implement routes in `backend/app/routes/`
    - Register router in `main.py`
+   - Test with FastAPI's `/docs` endpoint
 
-2. **Frontend** (Separate Repository)
-   - Frontend changes are made in https://github.com/vaggab0nd/your-digital-hub
-   - Deployed automatically via Lovable platform
+2. **Frontend Development**
+   - Add/modify components in `frontend/src/components/`
+   - Create pages in `frontend/src/pages/`
+   - Update API hooks in `frontend/src/hooks/useRailwayData.ts`
+   - Add TypeScript interfaces for new API responses
+   - Test with `npm run test` in frontend directory
+
+3. **Full-Stack Integration**
+   - Backend runs on port 8000 (default)
+   - Frontend dev server runs on port 5173 (Vite default)
+   - Configure `VITE_RAILWAY_API_URL` in `frontend/.env`
+   - Both can run simultaneously for local development
 
 ### Database Migrations
 
@@ -122,19 +168,78 @@ alembic revision --autogenerate -m "description"
 alembic upgrade head
 ```
 
+## Local Development Setup
+
+### Prerequisites
+- Python 3.11+ for backend
+- Node.js 18+ (recommend using nvm) for frontend
+- PostgreSQL database
+- Docker & Docker Compose (optional)
+
+### Backend Setup
+```bash
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your DATABASE_URL and API keys
+
+# Run migrations
+alembic upgrade head
+
+# Start backend server
+cd backend && uvicorn app.main:app --reload
+# Backend runs on http://localhost:8000
+```
+
+### Frontend Setup
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with VITE_RAILWAY_API_URL=http://localhost:8000/api
+
+# Start dev server
+npm run dev
+# Frontend runs on http://localhost:5173
+```
+
+### Running with Docker
+```bash
+# From project root
+docker-compose up --build
+# Backend: http://localhost:8000
+# Database: PostgreSQL on port 5432
+```
+
 ## Deployment
 
 ### Docker Deployment
-- Multi-stage Dockerfile for optimized images
+- Multi-stage Dockerfile for optimized backend images
 - Docker Compose orchestrates backend and database
+- Frontend built separately and deployed to Lovable or static hosting
 - Environment variables via `.env` file
 - Volume mounts for data persistence
 
 ### Environment Configuration
-Required variables:
+
+**Backend** (`.env` in root):
 - `DATABASE_URL` - PostgreSQL connection string
-- `OPENWEATHER_API_KEY` - Weather API key
+- `OPENWEATHER_API_KEY` - Weather API key (if using legacy endpoints)
 - `DEBUG`, `HOST`, `PORT` - Server configuration
+
+**Frontend** (`frontend/.env`):
+- `VITE_RAILWAY_API_URL` - Backend API URL (e.g., https://your-api.railway.app/api)
 
 ## Future Enhancements
 
@@ -273,8 +378,23 @@ def test_create_task(client, db_session):
 - Architecture allows for easy feature additions
 - Designed for single-user use (authentication coming in Phase 2)
 
+### Repository History
+
+**February 2026 - Monorepo Consolidation**
+- Merged frontend from separate repository (vaggab0nd/your-digital-hub)
+- Consolidated into single monorepo structure
+- Legacy vanilla JS frontend preserved in `frontend-legacy-vanilla-js/`
+- Modern React frontend now in `frontend/` directory
+- Simplified development workflow with co-located frontend and backend
+
+**Original Architecture**
+- Backend: https://github.com/vaggab0nd/wunderlists
+- Frontend: https://github.com/vaggab0nd/your-digital-hub (now consolidated)
+- Frontend was originally built and deployed on Lovable platform
+
 ---
 
 **Built by**: Claude (Anthropic AI)
-**Date**: January 2026
+**Date**: January 2026 (Initial), February 2026 (Monorepo Consolidation)
 **Purpose**: Personal productivity and life organization
+**Inspiration**: Wunderlist (RIP - killed by Microsoft)
