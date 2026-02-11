@@ -5,13 +5,13 @@ build:
     pre-build:
       - echo "=== Pre-Build Phase ==="
       - python --version
-      - python -m pip --version
-      - python -m pip install --upgrade pip setuptools wheel
+      - pip3 --version
+      - pip3 install --upgrade pip setuptools wheel
       - yum install -y postgresql-devel gcc python3-devel || echo "yum install skipped"
     build:
       - echo "=== Build Phase ==="
       - echo "Installing Python dependencies..."
-      - python -m pip install --no-cache-dir -r requirements.txt 2>&1
+      - pip3 install --no-cache-dir -r requirements.txt 2>&1
       - echo "Dependencies installed successfully"
     post-build:
       - echo "=== Post-Build Phase ==="
