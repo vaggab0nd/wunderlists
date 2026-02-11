@@ -24,7 +24,7 @@ run:
     - name: PYTHONDONTWRITEBYTECODE
       value: "1"
     - name: DATABASE_URL
-      value: "DATABASE_URL=postgresql://postgres:RVn.C]~-f2RL:U9uAdkJ)54rTVR>@wunder-database.cluster-c34ays6uuh09.eu-west-1.rds.amazonaws.com:5432/wunder-database"
+      value: postgresql://postgres:RVn.C]~-f2RL:U9uAdkJ)54rTVR>@wunder-database.cluster-c34ays6uuh09.eu-west-1.rds.amazonaws.com:5432/wunder-database
   # Or for sensitive data:
     
   # Note: Set these in App Runner Console:
