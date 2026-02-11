@@ -2,12 +2,6 @@ version: 1.0
 runtime: python311
 build:
   commands:
-    pre-build:
-      - echo "=== Pre-Build Phase ==="
-      - python --version
-      - pip3 --version
-      - pip3 install --upgrade pip setuptools wheel
-      - yum install -y postgresql-devel gcc python3-devel || echo "yum install skipped"
     build:
       - echo "=== Build Phase ==="
       - echo "Installing Python dependencies..."
@@ -17,20 +11,9 @@ build:
       - echo "=== Post-Build Phase ==="
       - echo "Build complete. Database migrations will run automatically at app startup."
 run:
-  command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
+  runtime-version: 3.11
+  pre-run:
+    - pip3 install -r backend/requirements.txt
+  command: python3 -m uvicorn main:app --host 0.0.0.0 --port 8080 --app-dir backend
   network:
-    port: 8000
-  env:
-    - name: HOST
-      value: "0.0.0.0"
-    - name: PORT
-      value: "8000"
-    - name: PYTHONUNBUFFERED
-      value: "1"
-    - name: PYTHONDONTWRITEBYTECODE
-      value: "1"
-  # Note: Set these in App Runner Console:
-  # - DATABASE_URL (required)
-  # - DEBUG=False
-  # - OPENWEATHER_API_KEY (optional)
-  # - ALLOWED_ORIGINS (for CORS)
+    port: 8080
