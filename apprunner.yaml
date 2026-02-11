@@ -3,7 +3,13 @@ runtime: python311
 build:
   commands:
     build:
-      - pip3 install -r backend/requirements.txt
+      - echo "=== Build Phase ==="
+      - echo "Installing Python dependencies..."
+      - pip install -r requirements.txt
+      - echo "Dependencies installed successfully"
+    post-build:
+      - echo "=== Post-Build Phase ==="
+      - echo "Build complete. Database migrations will run automatically at app startup."
 run:
   runtime-version: 3.11
   pre-run:
