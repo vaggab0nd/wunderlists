@@ -2,12 +2,6 @@ version: 1.0
 runtime: python311
 build:
   commands:
-    pre-build:
-      - echo "=== Pre-Build Phase ==="
-      - python --version
-      - pip3 --version
-      - pip3 install --upgrade pip setuptools wheel
-      - yum install -y postgresql-devel gcc python3-devel || echo "yum install skipped"
     build:
       - echo "=== Build Phase ==="
       - echo "Installing Python dependencies..."
