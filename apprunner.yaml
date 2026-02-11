@@ -23,8 +23,18 @@ run:
       value: "1"
     - name: PYTHONDONTWRITEBYTECODE
       value: "1"
+    - name: DATABASE_URL
+      value: "DATABASE_URL=postgresql://postgres:RVn.C]~-f2RL:U9uAdkJ)54rTVR>@wunder-database.cluster-c34ays6uuh09.eu-west-1.rds.amazonaws.com:5432/wunder-database"
+  # Or for sensitive data:
+  secrets:
+    - name: DATABASE_URL
+      value-from: "arn:aws:secretsmanager:eu-west-1:635336017073:secret:rds!cluster-18485305-9bf8-4465-8603-51ce29929e15-0i7ePR"
+      
   # Note: Set these in App Runner Console:
   # - DATABASE_URL (required)
+
+
+
   # - DEBUG=False
   # - OPENWEATHER_API_KEY (optional)
   # - ALLOWED_ORIGINS (for CORS)
