@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8080
 
 # Run the application
-CMD uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
+CMD python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
