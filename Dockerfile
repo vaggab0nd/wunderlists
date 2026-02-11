@@ -15,7 +15,7 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Run the application
-CMD uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
+CMD uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
