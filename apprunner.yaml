@@ -17,7 +17,7 @@ build:
       - cd backend && alembic upgrade head
       - echo "Migrations completed"
 run:
-  command: uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
+  command: python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
   network:
     port: 8000
   env:
