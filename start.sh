@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "Ensuring dependencies are installed..."
+pip3 install --user -q -r requirements.txt
+
 echo "Running database migrations..."
 python3 -m alembic upgrade head
 
