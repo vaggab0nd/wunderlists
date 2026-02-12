@@ -1,15 +1,11 @@
 version: 1.0
-runtime: python3
+runtime: python311
 build:
   commands:
-    pre-build:
-      - echo "=== Pre-Build Phase ==="
-      - python --version
-      - pip install --upgrade pip setuptools wheel
     build:
       - echo "=== Build Phase ==="
       - echo "Installing Python dependencies..."
-      - pip install -r requirements.txt
+      - pip3 install --no-cache-dir -r requirements.txt 2>&1
       - echo "Dependencies installed successfully"
     post-build:
       - echo "=== Post-Build Phase ==="
@@ -19,7 +15,7 @@ build:
 run:
   command: python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT --workers 2
   network:
-    port: 8000
+    port: 8080
   env:
     - name: HOST
       value: "0.0.0.0"
@@ -27,6 +23,10 @@ run:
       value: "1"
     - name: PYTHONDONTWRITEBYTECODE
       value: "1"
+    - name: DATABASE_URL
+      value: postgresql://postgres:RVn.C]~-f2RL:U9uAdkJ)54rTVR>@wunder-database.cluster-c34ays6uuh09.eu-west-1.rds.amazonaws.com:5432/wunder-database
+  # Or for sensitive data:
+    
   # Note: Set these in App Runner Console:
   # - DATABASE_URL (required)
   # - DEBUG=False

@@ -9,13 +9,13 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
 # Expose port
-EXPOSE 8000
+EXPOSE 8080
 
 # Run the application
-CMD uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 2
+CMD python -m uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080} --workers 2
