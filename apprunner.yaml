@@ -14,7 +14,7 @@ build:
     post-build:
       - echo "=== Post-Build Phase ==="
       - echo "Running database migrations..."
-      - cd backend && alembic upgrade head
+      - alembic upgrade head
       - echo "Migrations completed"
 run:
   command: python3 -m uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT --workers 2
